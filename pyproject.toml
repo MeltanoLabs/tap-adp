@@ -37,8 +37,8 @@ dev = [
     "mypy>=2.1.0",
     "pytest>=9.0.3",
     "singer-sdk[testing]",
-    "ty>=0.0.35",
-    "types-requests>=2.33.0.20260508",
+    "ty>=0.0.37",
+    "types-requests>=2.33.0.20260518",
 ]
 
 [build-system]
