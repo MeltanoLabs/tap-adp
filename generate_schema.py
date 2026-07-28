@@ -1,4 +1,7 @@
-"""Generate schemas for some ADP streams."""
+"""Generate schemas for some ADP streams.
+
+Copyright (c) 2026 Meltano.
+"""
 
 import json
 import os
@@ -15,7 +18,14 @@ from tap_adp.tap import TapADP
 
 
 def make_nullable(schema: dict) -> dict:
-    """Make all properties in the schema nullable and remove 'required'."""
+    """Make all properties in the schema nullable and remove 'required'.
+
+    Args:
+        schema: The schema to modify.
+
+    Returns:
+        The modified schema.
+    """
     if isinstance(schema, dict):
         if "type" in schema:
             if isinstance(schema["type"], str):
@@ -45,7 +55,7 @@ def generate_schema(
     builder = SchemaBuilder()
     records = stream_instance.get_records(context=context)
 
-    def convert_decimal(obj: Any) -> Any:  # noqa: ANN401
+    def convert_decimal(obj: Any) -> Any:  # ruff: ignore[any-type]
         if isinstance(obj, Decimal):
             return float(obj)
         if isinstance(obj, dict):
@@ -63,7 +73,7 @@ def generate_schema(
     schema = make_nullable(schema)  # Make all fields nullable
 
     if output_file is not None:
-        with open(output_file, "w") as f:  # noqa: PTH123
+        with open(output_file, "w", encoding="utf-8") as f:  # ruff: ignore[builtin-open]
             json.dump(schema, f, indent=2)
 
 

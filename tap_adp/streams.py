@@ -1,6 +1,9 @@
-"""Stream type classes for tap-adp."""
+"""Stream type classes for tap-adp.
 
-# ruff: noqa: ERA001
+Copyright (c) 2026 Meltano.
+"""
+
+# ruff: file-ignore[commented-out-code]
 
 from __future__ import annotations
 
@@ -229,7 +232,11 @@ class DepartmentValidationStream(PaginatedADPStream):
         row: Record,
         context: Context | None = None,
     ) -> Record | None:
-        """To form primary key we needed a nested key, so we're adding it here."""
+        """To form primary key we needed a nested key, so we're adding it here.
+
+        Returns:
+            The processed row with the nested key added.
+        """
         row["_sdc_namecode_code"] = row["nameCode"]["code"]
         return row
 
@@ -250,7 +257,7 @@ class PayrollOutputStream(ADPStream):
     path = "/payroll/v2/payroll-output"
     primary_keys = ("itemID",)
     replication_key = "_sdc_modified_schedule_entry_id"
-    records_jsonpath = "$.payrollOutputs[*]"  # There's a root level processMessages key that has metaData about the corresponding payroll(s) might be useful, ignoring for now to move forward quickly  # noqa: E501
+    records_jsonpath = "$.payrollOutputs[*]"  # There's a root level processMessages key that has metaData about the corresponding payroll(s) might be useful, ignoring for now to move forward quickly  # ruff: ignore[line-too-long]
 
     @override
     def get_child_context(self, record: Record, context: Context | None) -> Context | None:
@@ -282,7 +289,7 @@ class PayrollOutputStream(ADPStream):
         # to get them all.
         # This gives us a good chance of pulling all the most recent payrolls
         row["_sdc_modified_schedule_entry_id"] = (
-            datetime.strptime(  # noqa: DTZ007
+            datetime.strptime(  # ruff: ignore[call-datetime-strptime-without-zone]
                 row["payrollScheduleReference"]["scheduleEntryID"][:8],
                 "%Y%m%d",
             )
@@ -307,7 +314,7 @@ class PayrollOutputAccStream(ADPStream):
         next_page_token: Any | None,
     ) -> dict[str, Any] | str:
         # Today's date
-        assert context is not None  # noqa: S101
+        assert context is not None  # ruff: ignore[assert]
 
         return {
             "level": "acc-all",
@@ -316,7 +323,11 @@ class PayrollOutputAccStream(ADPStream):
 
     @override
     def validate_response(self, response: requests.Response) -> None:
-        """Validate the response."""
+        """Validate the response.
+
+        Raises:
+            SkippableAPIError: If the response is a 404 and the payroll is still loading.
+        """
         # Handle 404 errors with specific message about data loading
         if response.status_code == HTTPStatus.NOT_FOUND:
             response_json = response.json()
@@ -328,13 +339,12 @@ class PayrollOutputAccStream(ADPStream):
                         "developerMessage", {}
                     ).get(
                         "codeValue"
-                    )  # Could use TURBOGEN000010 but this is such a weird code, I'm going with the message in case there's others that are close to this  # noqa: E501
+                    )  # Could use TURBOGEN000010 but this is such a weird code, I'm going with the message in case there's others that are close to this  # ruff: ignore[line-too-long]
                     if "still loading the acc-all payroll data" in dev_message:
-                        msg = f"ADP API is still loading payroll data, will retry: {dev_message=}, {code_value=}"  # noqa: E501
+                        msg = f"ADP API is still loading payroll data, will retry: {dev_message=}, {code_value=}"  # ruff: ignore[line-too-long]
                         self.logger.warning(msg)
-                        raise SkippableAPIError(
-                            msg
-                        )  # Even though is is a 404, this has only happened for us when the Payroll has been in a rejected status, so we're skipping it  # noqa: E501
+                        # Even though is is a 404, this has only happened for us when the Payroll has been in a rejected status, so we're skipping it  # ruff: ignore[line-too-long]
+                        raise SkippableAPIError(msg)
 
         if response.status_code == HTTPStatus.BAD_REQUEST and response.json().get(
             "confirmMessage", {}
@@ -349,7 +359,7 @@ class PayrollOutputAccStream(ADPStream):
                     raise SkippableAPIError(exception_message)
                 if (
                     code_value == "PAYGEN00030"
-                ):  # The payroll job id provided was in an invalid state (EDL, DAT, PVE, NER, EER, etc).  # noqa: E501
+                ):  # The payroll job id provided was in an invalid state (EDL, DAT, PVE, NER, EER, etc).  # ruff: ignore[line-too-long]
                     exception_message = (
                         f"The payroll job id provided was in an invalid state ({dev_message})."
                     )
@@ -377,7 +387,7 @@ class PayrollOutputAccStream(ADPStream):
                     # Record filtered out during post_process()
                     continue
                 yield transformed_record
-        # Works because this is a child stream of PayrollOutputStream and only has one record  # noqa: E501
+        # Works because this is a child stream of PayrollOutputStream and only has one record
         except SkippableAPIError:
             self.logger.warning("Mass Processing is currently Disabled.")
             return

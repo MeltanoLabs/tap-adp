@@ -1,4 +1,7 @@
-"""ADP tap class."""
+"""ADP tap class.
+
+Copyright (c) 2026 Meltano.
+"""
 
 from __future__ import annotations
 
@@ -43,14 +46,6 @@ class TapADP(Tap):
             th.StringType,
             secret=True,
             description="Client private key for ADP API",
-        ),
-        th.Property(
-            "user_agent",
-            th.StringType,
-            description=(
-                "A custom User-Agent header to send with each request. Default is "
-                "'<tap_name>/<tap_version>'"
-            ),
         ),
         th.Property(
             "start_date",

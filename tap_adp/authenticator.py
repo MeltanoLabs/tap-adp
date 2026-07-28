@@ -1,4 +1,7 @@
-"""ADP OAuth authentication handling."""
+"""ADP OAuth authentication handling.
+
+Copyright (c) 2026 Meltano.
+"""
 
 from __future__ import annotations
 
@@ -12,7 +15,7 @@ from typing import Any
 import requests
 from requests.adapters import HTTPAdapter
 from singer_sdk.authenticators import OAuthAuthenticator
-from singer_sdk.helpers._util import utc_now
+from singer_sdk.helpers._util import utc_now  # ruff: ignore[import-private-name]
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -94,19 +97,23 @@ class ADPAuthenticator(OAuthAuthenticator):
             key_file.write(self.cert_private.encode("utf-8"))
 
         try:
-            os.chmod(cert_path, 0o600)  # noqa: PTH101
-            os.chmod(key_path, 0o600)  # noqa: PTH101
+            os.chmod(cert_path, 0o600)  # ruff: ignore[os-chmod]
+            os.chmod(key_path, 0o600)  # ruff: ignore[os-chmod]
             ctx = ssl.create_default_context()
             ctx.load_cert_chain(certfile=cert_path, keyfile=key_path)
         finally:
-            os.unlink(cert_path)  # noqa: PTH108
-            os.unlink(key_path)  # noqa: PTH108
+            os.unlink(cert_path)  # ruff: ignore[os-unlink]
+            os.unlink(key_path)  # ruff: ignore[os-unlink]
 
         return ctx
 
     @override
     def update_access_token(self) -> None:
-        """Update `access_token` along with `last_refreshed` and `expires_in`."""
+        """Update `access_token` along with `last_refreshed` and `expires_in`.
+
+        Raises:
+            requests.HTTPError: If the OAuth request fails.
+        """
         request_time = utc_now()
 
         session = requests.Session()
