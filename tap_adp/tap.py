@@ -39,13 +39,13 @@ class TapADP(Tap):
         th.Property(
             "cert_public",
             th.StringType,
-            description="Client certificate for ADP API",
+            description="Client certificate for ADP API. Supports base64-encoded values.",
         ),
         th.Property(
             "cert_private",
             th.StringType,
             secret=True,
-            description="Client private key for ADP API",
+            description="Client private key for ADP API. Supports base64-encoded values.",
         ),
         th.Property(
             "start_date",

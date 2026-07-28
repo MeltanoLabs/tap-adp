@@ -5,6 +5,9 @@ Copyright (c) 2026 Meltano.
 
 from __future__ import annotations
 
+import base64
+import datetime
+import logging
 import os
 import ssl
 import sys
@@ -14,8 +17,7 @@ from typing import Any
 
 import requests
 from requests.adapters import HTTPAdapter
-from singer_sdk.authenticators import OAuthAuthenticator
-from singer_sdk.helpers._util import utc_now  # ruff: ignore[import-private-name]
+from singer_sdk.authenticators import OAuthAuthenticator, SingletonMeta
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -24,6 +26,8 @@ else:
 
 
 AUTH_ENDPOINT = "https://accounts.adp.com/auth/oauth/v2/token"
+
+logger = logging.getLogger(__name__)
 
 
 class _MTLSAdapter(HTTPAdapter):
@@ -44,7 +48,7 @@ class _MTLSAdapter(HTTPAdapter):
         super().init_poolmanager(*args, **kwargs)  # type: ignore[no-untyped-call]
 
 
-class ADPAuthenticator(OAuthAuthenticator):
+class ADPAuthenticator(OAuthAuthenticator, metaclass=SingletonMeta):
     """Authenticator class for ADP."""
 
     @override
@@ -68,8 +72,8 @@ class ADPAuthenticator(OAuthAuthenticator):
         self.cert_public = cert_public
         self.cert_private = cert_private
 
-    @override
     @property
+    @override
     def oauth_request_body(self) -> dict[str, Any]:
         """Define the OAuth request body for ADP."""
         return {
@@ -87,14 +91,26 @@ class ADPAuthenticator(OAuthAuthenticator):
         context holds the cert in memory so the files are not needed at
         request time.
         """
+        if self.cert_public.startswith("-----BEGIN CERTIFICATE-----"):
+            cert_public_bytes = self.cert_public.encode("utf-8")
+        else:
+            logger.info("Certificate is not PEM-encoded; assuming base64")
+            cert_public_bytes = base64.b64decode(self.cert_public)
+
+        if self.cert_private.startswith("-----BEGIN PRIVATE KEY-----"):
+            cert_private_bytes = self.cert_private.encode("utf-8")
+        else:
+            logger.info("Certificate private key is not PEM-encoded; assuming base64")
+            cert_private_bytes = base64.b64decode(self.cert_private)
+
         with (
             tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".pem") as cert_file,
             tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".pem") as key_file,
         ):
             cert_path = cert_file.name
             key_path = key_file.name
-            cert_file.write(self.cert_public.encode("utf-8"))
-            key_file.write(self.cert_private.encode("utf-8"))
+            cert_file.write(cert_public_bytes)
+            key_file.write(cert_private_bytes)
 
         try:
             os.chmod(cert_path, 0o600)  # ruff: ignore[os-chmod]
@@ -114,7 +130,7 @@ class ADPAuthenticator(OAuthAuthenticator):
         Raises:
             requests.HTTPError: If the OAuth request fails.
         """
-        request_time = utc_now()
+        request_time = datetime.datetime.now(datetime.timezone.utc)
 
         session = requests.Session()
         session.mount("https://", _MTLSAdapter(ssl_context=self.ssl_context))
@@ -127,10 +143,10 @@ class ADPAuthenticator(OAuthAuthenticator):
                 timeout=60,
             )
             response.raise_for_status()
-        except requests.HTTPError:
+        except requests.HTTPError as exc:
             self.logger.warning(
-                "Failed OAuth login, response was '%s'",
-                response.text,
+                "Failed OAuth login, error was '%s'",
+                exc.response.text if exc.response else str(exc),
             )
             raise
 

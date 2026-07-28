@@ -36,12 +36,12 @@ plugins:
 
     - name: cert_public
       label: Client Certificate
-      description: Client certificate for ADP API
+      description: Client certificate for ADP API. Supports base64-encoded values.
       sensitive: true
 
     - name: cert_private
       label: Client Private Key
-      description: Client private key for ADP API
+      description: Client private key for ADP API. Supports base64-encoded values.
       sensitive: true
 
     - name: start_date
