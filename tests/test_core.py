@@ -1,4 +1,7 @@
-"""Tests standard tap features using the built-in SDK tests library."""
+"""Tests standard tap features using the built-in SDK tests library.
+
+Copyright (c) 2026 Meltano.
+"""
 
 import requests
 from singer_sdk.testing import get_tap_test_class
@@ -31,20 +34,20 @@ class TestADPPaginator:
         paginator = ADPPaginator(start_value=0, page_size=100)
         response = requests.Response()
         response.status_code = 200
-        response._content = b'{"foo": "bar"}'  # noqa: SLF001
+        response._content = b'{"foo": "bar"}'  # ruff: ignore[private-member-access]
 
         paginator.advance(response)
-        assert paginator.current_value == 100  # noqa: PLR2004
+        assert paginator.current_value == 100  # ruff: ignore[magic-value-comparison]
 
         paginator.advance(response)
-        assert paginator.current_value == 200  # noqa: PLR2004
+        assert paginator.current_value == 200  # ruff: ignore[magic-value-comparison]
 
     def test_has_more(self) -> None:
         """Test has more."""
         paginator = ADPPaginator(start_value=0, page_size=100)
         response = requests.Response()
         response.status_code = 200
-        response._content = b'{"next": 100}'  # noqa: SLF001
+        response._content = b'{"next": 100}'  # ruff: ignore[private-member-access]
         assert paginator.has_more(response)
 
     def test_has_more_no_content(self) -> None:

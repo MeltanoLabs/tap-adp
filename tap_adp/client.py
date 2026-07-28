@@ -1,4 +1,7 @@
-"""REST client handling, including ADPStream base class."""
+"""REST client handling, including ADPStream base class.
+
+Copyright (c) 2026 Meltano.
+"""
 
 from __future__ import annotations
 
@@ -47,16 +50,16 @@ class ADPStream(RESTStream[_T], Generic[_T]):
     _LOG_REQUEST_METRIC_URLS: bool = True
     TYPE_CONFORMANCE_LEVEL = TypeConformanceLevel.ROOT_ONLY
 
-    @override
     @property
+    @override
     def url_base(self) -> str:
-        """Return the API URL root, configurable via tap settings."""
+        """The API URL root, configurable via tap settings."""
         return "https://api.adp.com"
 
-    @override
     @cached_property
+    @override
     def authenticator(self) -> ADPAuthenticator:
-        """Return a new authenticator object."""
+        """A new authenticator object."""
         return ADPAuthenticator(
             client_id=self.config["client_id"],
             client_secret=self.config["client_secret"],
@@ -66,7 +69,7 @@ class ADPStream(RESTStream[_T], Generic[_T]):
 
     @property
     def requests_session(self) -> requests.Session:
-        """Return a requests session with the mTLS adapter mounted."""
+        """A requests session with the mTLS adapter mounted."""
         session = super().requests_session
         session.mount("https://", _MTLSAdapter(ssl_context=self.authenticator.ssl_context))
         return session
@@ -95,6 +98,9 @@ class ADPStream(RESTStream[_T], Generic[_T]):
         """Additional info for debugging purposes.
 
         Authorization is included in Headers, but Body is safe to print out in logs.
+
+        Returns:
+            A formatted error message with truncated request and response content.
         """
         truncated_request_body = f"{response.request.body!r}"[:10000]
         truncated_response_content = f"{response.content!r}"[:10000]
@@ -111,7 +117,11 @@ class PaginatedADPStream(ADPStream[int]):
 
     @override
     def get_new_paginator(self) -> ADPPaginator:
-        """Create a new paginator for ADP API pagination."""
+        """Create a new paginator for ADP API pagination.
+
+        Returns:
+            A new ADPPaginator instance.
+        """
         return ADPPaginator(start_value=0, page_size=100)
 
     @override
