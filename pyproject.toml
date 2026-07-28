@@ -1,6 +1,6 @@
 [project]
 name = "tap-adp"
-version = "0.0.1"
+dynamic = ["version"]
 description = "Singer tap for ADP, built with the Meltano Singer SDK."
 authors = [{ name = "AutoIDM", email = "support@autoidm.com" }]
 requires-python = ">=3.10"
@@ -26,7 +26,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-s3 = ["s3fs~=2026.6.0"]
+s3 = ["s3fs~=2026.6"]
 
 [project.scripts]
 tap-adp = "tap_adp.tap:TapADP.cli"
@@ -42,8 +42,12 @@ dev = [
 ]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+fallback-version = "0.0.0.dev0"
+source = "vcs"
 
 [tool.pytest]
 addopts = [
