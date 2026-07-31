@@ -39,8 +39,8 @@ class WorkersStream(PaginatedADPStream):
     primary_keys = ("associateOID",)
     records_jsonpath = "$.workers[*]"
 
-    @override
     @property
+    @override
     def http_headers(self) -> dict[str, str]:
         headers = super().http_headers
         headers["Accept"] = "application/json;masked=false"
@@ -108,6 +108,20 @@ class PayrollInstructionStream(ADPStream):
     primary_keys = ("payrollAgreementID",)
     records_jsonpath = "$.payrollInstructions[*]"
     parent_stream_type = WorkersStream
+
+    @override
+    def parse_response(self, response: requests.Response) -> Iterable[dict[str, Any]]:
+        if response.status_code == HTTPStatus.NOT_FOUND:
+            return []
+        return super().parse_response(response)
+
+    @override
+    def validate_response(self, response: requests.Response) -> None:
+        if response.status_code == HTTPStatus.NOT_FOUND:
+            msg = f"No payroll instructions found for worker: {response.request.path_url}"
+            self.logger.warning(msg)
+            return
+        super().validate_response(response)
 
 
 # class PayDataInputStream(ADPStream):
